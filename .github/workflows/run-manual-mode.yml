@@ -1,0 +1,265 @@
+# .github/workflows/run-manual-mode.yml
+# =============================================================
+# MANUAL MODE — Process local/manual items from raw text + image URLs
+# =============================================================
+
+name: 🤳 Run Manual Mode (Admin Input)
+
+on:
+  workflow_dispatch:
+    inputs:
+      item_title:
+        description: 'Item title (e.g. "Gents Wash n Wear Premium Suit")'
+        required: true
+        type: string
+      raw_specs:
+        description: 'Raw bullet specs (e.g. "dark blue, 4.5 meters, soft fabric, summer collection")'
+        required: true
+        type: string
+      price:
+        description: 'Price (e.g. "Rs. 2500" or "PKR 2500")'
+        required: true
+        type: string
+      image_url_1:
+        description: 'Image URL #1 (direct link to phone photo)'
+        required: false
+        type: string
+      image_url_2:
+        description: 'Image URL #2 (optional)'
+        required: false
+        type: string
+      image_url_3:
+        description: 'Image URL #3 (optional)'
+        required: false
+        type: string
+      delivery_note:
+        description: 'Delivery note (default: "Free delivery in Narowal")'
+        required: false
+        type: string
+        default: 'Free delivery in Narowal'
+      languages:
+        description: 'Languages: en,roman,urdu'
+        required: false
+        type: string
+        default: 'en,roman'
+
+  # Also triggerable by opening a GitHub Issue with the "manual-item" label.
+  # The issue body becomes the raw_specs and the title becomes item_title.
+  issues:
+    types: [opened, edited]
+
+permissions:
+  contents: write
+  actions: read
+  issues: write
+
+concurrency:
+  group: catalog-write
+  cancel-in-progress: false
+
+jobs:
+  decide:
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.decide.outputs.should_run }}
+      title: ${{ steps.decide.outputs.title }}
+      specs: ${{ steps.decide.outputs.specs }}
+      price: ${{ steps.decide.outputs.price }}
+      img1: ${{ steps.decide.outputs.img1 }}
+      img2: ${{ steps.decide.outputs.img2 }}
+      img3: ${{ steps.decide.outputs.img3 }}
+      delivery: ${{ steps.decide.outputs.delivery }}
+      languages: ${{ steps.decide.outputs.languages }}
+    steps:
+      - id: decide
+        run: |
+          # Default to workflow_dispatch inputs
+          SHOULD_RUN="true"
+          TITLE="${{ inputs.item_title || '' }}"
+          SPECS="${{ inputs.raw_specs || '' }}"
+          PRICE="${{ inputs.price || '' }}"
+          IMG1="${{ inputs.image_url_1 || '' }}"
+          IMG2="${{ inputs.image_url_2 || '' }}"
+          IMG3="${{ inputs.image_url_3 || '' }}"
+          DELIVERY="${{ inputs.delivery_note || 'Free delivery in Narowal' }}"
+          LANGS="${{ inputs.languages || 'en,roman' }}"
+
+          # If triggered by issue
+          if [ -z "$TITLE" ] && [ "${{ github.event_name }}" = "issues" ]; then
+            TITLE="${{ github.event.issue.title }}"
+            # Issue body: parse first line as price "Price: Rs. 2500", rest as specs
+            BODY="${{ github.event.issue.body }}"
+            # Only run if label "manual-item" is present
+            LABEL="${{ contains(github.event.issue.labels.*.name, 'manual-item') }}"
+            if [ "$LABEL" = "true" ]; then
+              SHOULD_RUN="true"
+              # Extract price line
+              PRICE=$(echo "$BODY" | grep -i "^price:" | head -1 | sed 's/^[Pp]rice:[[:space:]]*//')
+              # Remove price line, rest is specs
+              SPECS=$(echo "$BODY" | grep -v -i "^price:" | grep -v -i "^image" | head -c 1000)
+              # Extract image URL lines
+              IMG1=$(echo "$BODY" | grep -i "^image_1:" | head -1 | sed 's/^[Ii]mage_1:[[:space:]]*//')
+              IMG2=$(echo "$BODY" | grep -i "^image_2:" | head -1 | sed 's/^[Ii]mage_2:[[:space:]]*//')
+              IMG3=$(echo "$BODY" | grep -i "^image_3:" | head -1 | sed 's/^[Ii]mage_3:[[:space:]]*//')
+            else
+              SHOULD_RUN="false"
+            fi
+          fi
+
+          if [ -z "$TITLE" ] || [ -z "$SPECS" ] || [ -z "$PRICE" ]; then
+            SHOULD_RUN="false"
+          fi
+
+          echo "should_run=$SHOULD_RUN" >> $GITHUB_OUTPUT
+          echo "title=$TITLE" >> $GITHUB_OUTPUT
+          echo "specs=$SPECS" >> $GITHUB_OUTPUT
+          echo "price=$PRICE" >> $GITHUB_OUTPUT
+          echo "img1=$IMG1" >> $GITHUB_OUTPUT
+          echo "img2=$IMG2" >> $GITHUB_OUTPUT
+          echo "img3=$IMG3" >> $GITHUB_OUTPUT
+          echo "delivery=$DELIVERY" >> $GITHUB_OUTPUT
+          echo "languages=$LANGS" >> $GITHUB_OUTPUT
+
+  process:
+    needs: decide
+    if: needs.decide.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      BRAND_NAME: ${{ vars.BRAND_NAME || 'Local Boutique' }}
+      CITY: ${{ vars.CITY || 'Narowal' }}
+      ITEM_TITLE: ${{ needs.decide.outputs.title }}
+      RAW_SPECS: ${{ needs.decide.outputs.specs }}
+      PRICE: ${{ needs.decide.outputs.price }}
+      IMAGE_URL_1: ${{ needs.decide.outputs.img1 }}
+      IMAGE_URL_2: ${{ needs.decide.outputs.img2 }}
+      IMAGE_URL_3: ${{ needs.decide.outputs.img3 }}
+      DELIVERY_NOTE: ${{ needs.decide.outputs.delivery }}
+      LANGUAGES: ${{ needs.decide.outputs.languages }}
+      OUTPUT_DIR: ${{ github.workspace }}/output
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 1
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 📦 Install Node dependencies
+        run: npm ci || npm install
+
+      - name: 📦 Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install Pillow numpy
+
+      - name: 🤳 Run manual processor
+        id: process
+        run: node scripts/manual_processor.js
+
+      - name: 🖼️ Optimize phone-captured images
+        id: optimize
+        run: |
+          python3 scripts/image_optimizer.py \
+            --input ./output/images \
+            --output ./output/optimized \
+            --brand "${BRAND_NAME}" \
+            --quality 85 \
+            --max-size 1080 \
+            --manifest ./output/image_manifest.json
+
+      - name: 📝 Generate templates
+        id: templates
+        env:
+          MANUAL_RESULT: ${{ github.workspace }}/output/manual_result.json
+          IMAGE_MANIFEST: ${{ github.workspace }}/output/image_manifest.json
+        run: node scripts/template_engine.js
+
+      - name: 🗃️ Append to catalog.json
+        run: node scripts/db.js append --file ./output/manual_result.json
+
+      - name: 📊 Generate run summary
+        if: always()
+        run: |
+          cat > $GITHUB_STEP_SUMMARY << EOF
+          ## 🤳 Manual Mode Run Summary
+
+          | Field | Value |
+          |-------|-------|
+          | Item title | ${{ needs.decide.outputs.title }} |
+          | Category detected | ${{ steps.process.outputs.category }} |
+          | Price | ${{ needs.decide.outputs.price }} |
+          | Images processed | ${{ steps.optimize.outputs.processed_count }} |
+          | Templates generated | ${{ steps.templates.outputs.output_count }} |
+          | Delivery note | ${{ needs.decide.outputs.delivery }} |
+          | Languages | ${{ needs.decide.outputs.languages }} |
+
+          ### 📁 Output structure
+          \`\`\`
+          output/
+          ├── manual_result.json
+          ├── image_manifest.json
+          ├── template_manifest.json
+          ├── images/         (raw downloads)
+          ├── optimized/      (watermarked + compressed)
+          ├── telegram/
+          ├── whatsapp/
+          ├── social_media/
+          └── tiktok/
+          \`\`\`
+          EOF
+
+      - name: 📦 Bundle Apparel-Manual-Pack artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Apparel-Manual-Pack
+          path: |
+            output/
+            database/catalog.json
+          retention-days: 30
+          compression-level: 9
+
+      - name: 🔄 Commit catalog.json back to main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add database/catalog.json
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "🤳 catalog: +1 manual item (${{ steps.process.outputs.category }}) from run ${{ github.run_id }}"
+            git push
+          fi
+
+      - name: 💬 Comment on issue (if triggered by issue)
+        if: github.event_name == 'issues'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `✅ Manual item processed!\n\n📦 Download: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}\n\n- Templates generated: ${{ steps.templates.outputs.output_count }}\n- Images optimized: ${{ steps.optimize.outputs.processed_count }}\n- Catalog updated.`
+            })
+
+      - name: 🚨 Notify on failure
+        if: failure()
+        run: |
+          echo "::error::Manual mode failed."
+          if [ -n "${{ secrets.DISCORD_WEBHOOK }}" ]; then
+            curl -s -X POST -H "Content-Type: application/json" \
+              -d "{\"content\":\"❌ Manual mode run failed: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" \
+              "${{ secrets.DISCORD_WEBHOOK }}" || true
+          fi

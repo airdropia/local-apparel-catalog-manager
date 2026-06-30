@@ -1,0 +1,53 @@
+{
+  "name": "local-apparel-catalog-manager",
+  "version": "2.0.0",
+  "description": "AI Digital Content Manager for localized retail clothing business — multi-platform scraper, image optimizer, and 4-format social media template engine orchestrated via GitHub Actions.",
+  "main": "scripts/template_engine.js",
+  "type": "commonjs",
+  "scripts": {
+    "scrape:link": "node scripts/scraper.js",
+    "process:manual": "node scripts/manual_processor.js",
+    "build:templates": "node scripts/template_engine.js",
+    "optimize:images": "python3 scripts/image_optimizer.py",
+    "test": "jest --coverage",
+    "test:watch": "jest --watch",
+    "lint": "eslint scripts/ tests/",
+    "validate:catalog": "node scripts/db.js validate"
+  },
+  "keywords": [
+    "apparel",
+    "catalog",
+    "scraper",
+    "social-media",
+    "github-actions",
+    "whatsapp",
+    "telegram",
+    "tiktok",
+    "instagram",
+    "facebook",
+    "e-commerce",
+    "automation"
+  ],
+  "author": "airdropia",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.7.7",
+    "cheerio": "^1.0.0",
+    "sharp": "^0.33.5",
+    "dotenv": "^16.4.5",
+    "p-limit": "^3.1.0",
+    "retry-axios": "^2.6.0",
+    "user-agents": "^1.1.447",
+    "sanitize-filename": "^1.6.3",
+    "uuid": "^9.0.1",
+    "lodash": "^4.17.21",
+    "luxon": "^3.5.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "eslint": "^9.11.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

@@ -1,0 +1,20 @@
+<!--
+  Telegram Embed Template — used as a reference for what the engine produces.
+  The actual template is generated programmatically by scripts/template_engine.js
+-->
+<div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:480px;margin:0 auto;padding:12px;border:1px solid #e0e0e0;border-radius:12px;background:#fff;">
+  <img src="data:image/jpeg;base64,{{BASE64_IMAGE}}" alt="{{NAME}}" style="max-width:100%;border-radius:8px;">
+  <h2 style="margin:8px 0 4px;font-size:20px;color:#1a1a1a;">{{EMOJI}} <b>{{NAME}}</b></h2>
+  <code style="font-size:12px;color:#666;">SKU: {{SKU}}</code><br>
+  <p style="font-size:22px;color:#0a7d24;margin:8px 0;"><b>{{PRICE}}</b></p>
+  <div style="margin:8px 0;font-size:14px;color:#333;">
+    <b>Specs</b><br>
+    • Fabric: {{FABRIC}}<br>
+    • Color: {{COLOR}}<br>
+    • Pieces: {{PIECES}}
+  </div>
+  <p style="font-size:13px;color:#555;margin:8px 0;">{{DESCRIPTION}}</p>
+  <div style="margin-top:12px;padding:8px;background:#f7f7f7;border-radius:6px;font-size:13px;">
+    <b>{{BRAND}}</b><br><b>Delivery:</b> {{DELIVERY_NOTE}}
+  </div>
+</div>

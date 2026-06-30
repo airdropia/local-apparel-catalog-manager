@@ -1,0 +1,100 @@
+# .github/workflows/scheduled-drop.yml
+# =============================================================
+# SCHEDULED MODE — Optional daily "drop" workflow that picks
+# the latest catalog entries and re-generates fresh templates
+# (useful for social media posting schedules).
+# =============================================================
+
+name: ⏰ Scheduled Daily Drop
+
+on:
+  schedule:
+    # 9 AM PKT (UTC 04:00) every day
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+    inputs:
+      lookback_hours:
+        description: 'How many hours back to look for new catalog entries'
+        required: false
+        type: string
+        default: '24'
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  daily-drop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      BRAND_NAME: ${{ vars.BRAND_NAME || 'Local Boutique' }}
+      CITY: ${{ vars.CITY || 'Narowal' }}
+      OUTPUT_DIR: ${{ github.workspace }}/output
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 📦 Install dependencies
+        run: npm ci || npm install
+
+      - name: 🔎 Find recent catalog entries
+        id: find
+        run: |
+          LOOKBACK="${{ inputs.lookback_hours || '24' }}"
+          node -e "
+          const db = require('./scripts/db.js');
+          const catalog = db.loadCatalog();
+          const cutoff = new Date(Date.now() - $LOOKBACK * 60 * 60 * 1000).toISOString();
+          const recent = catalog.entries.filter(e => e.timestamp >= cutoff);
+          const products = recent.flatMap(e => e.products || []);
+          const fs = require('fs');
+          const result = {
+            runId: 'scheduled-' + Date.now(),
+            scrapedAt: new Date().toISOString(),
+            mode: 'scheduled',
+            sourceUrl: null,
+            deliveryNote: null,
+            platform: 'scheduled',
+            productCount: products.length,
+            products: products,
+          };
+          fs.writeFileSync('./output/scrape_result.json', JSON.stringify(result, null, 2));
+          console.log('Found ' + products.length + ' recent products');
+          console.log('::set-output name=count::' + products.length);
+          "
+          mkdir -p ./output
+
+      - name: 📝 Regenerate templates from recent entries
+        if: steps.find.outputs.count != '0'
+        env:
+          SCRAPE_RESULT: ${{ github.workspace }}/output/scrape_result.json
+        run: node scripts/template_engine.js
+
+      - name: 📦 Upload daily-drop artifact
+        if: steps.find.outputs.count != '0'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Daily-Drop-${{ github.run_id }}
+          path: output/
+          retention-days: 7
+
+      - name: 📊 Summary
+        if: always()
+        run: |
+          cat > $GITHUB_STEP_SUMMARY << EOF
+          ## ⏰ Daily Drop Summary
+          - Lookback: ${{ inputs.lookback_hours || '24' }} hours
+          - Recent products found: ${{ steps.find.outputs.count || '0' }}
+          - Templates regenerated: ${{ steps.find.outputs.count != '0' && '✅' || '⏭️ (nothing new)' }}
+          EOF

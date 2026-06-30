@@ -1,0 +1,18 @@
+*🔥 NEW ARRIVAL 🔥*
+
+{{EMOJI}} *{{NAME}}*
+_{{SKU}}_
+
+💰 *Price: {{PRICE}}*
+
+*Specs:*
+▪️ Fabric: {{FABRIC}}
+▪️ Color: {{COLOR}}
+▪️ Pieces: {{PIECES}}
+
+🚚 Delivery: {{DELIVERY_NOTE}}
+
+📞 *Contact to order:*
+_{{BRAND}}_
+
+_(Attach image manually — WhatsApp Web does not support inline images via text)_

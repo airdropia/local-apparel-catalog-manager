@@ -1,0 +1,26 @@
+{{EMOJI}} NEW ARRIVAL {{EMOJI}}
+
+{{NAME}}
+
+💰 Price: {{PRICE}}
+🔖 SKU: {{SKU}}
+
+━━━━━━━━━━━━━━━
+📋 SPECS
+🧵 Fabric: {{FABRIC}}
+🎨 Color: {{COLOR}}
+📦 Pieces: {{PIECES}}
+🧩 Includes: {{COMPONENTS}}
+🗓️ Collection: {{SEASON}}
+━━━━━━━━━━━━━━━
+
+{{DESCRIPTION}}
+
+🚚 Delivery: {{DELIVERY_NOTE}}
+📍 {{CITY}}, Pakistan
+
+📞 Contact to order:
+✆ Inbox / WhatsApp us
+🏠 {{BRAND}}
+
+#{{CITY}}Fashion #{{CITY}}Shopping #LocalBoutique #PakistanFashion #OnlineShopping

@@ -1,0 +1,170 @@
+# .github/workflows/run-link-mode.yml
+# =============================================================
+# LINK MODE — Scrape a brand URL, optimize media, generate
+# multi-platform templates, persist to catalog.json, push back.
+# =============================================================
+
+name: 🛍️ Run Link Mode (Brand Scraper)
+
+on:
+  workflow_dispatch:
+    inputs:
+      catalog_url:
+        description: 'Brand product/collection URL (e.g. https://nishatlinen.com/collections/...)'
+        required: true
+        type: string
+      delivery_note:
+        description: 'Optional delivery note (e.g. "Free delivery in Narowal")'
+        required: false
+        type: string
+        default: 'Free delivery in Narowal'
+      max_products:
+        description: 'Max products to scrape (1-50)'
+        required: false
+        type: string
+        default: '20'
+      languages:
+        description: 'Comma-separated languages: en,roman,urdu'
+        required: false
+        type: string
+        default: 'en,roman'
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: catalog-write
+  cancel-in-progress: false
+
+jobs:
+  scrape-and-package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      BRAND_NAME: ${{ vars.BRAND_NAME || 'Local Boutique' }}
+      CITY: ${{ vars.CITY || 'Narowal' }}
+      CATALOG_URL: ${{ inputs.catalog_url }}
+      DELIVERY_NOTE: ${{ inputs.delivery_note }}
+      MAX_PRODUCTS: ${{ inputs.max_products }}
+      LANGUAGES: ${{ inputs.languages }}
+      OUTPUT_DIR: ${{ github.workspace }}/output
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 1
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 📦 Install Node dependencies
+        run: |
+          npm ci || npm install
+          echo "Node deps installed"
+
+      - name: 📦 Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install Pillow numpy
+
+      - name: 🕸️ Run brand scraper
+        id: scrape
+        run: node scripts/scraper.js
+        continue-on-error: false
+
+      - name: 🖼️ Optimize downloaded images
+        id: optimize
+        run: |
+          python3 scripts/image_optimizer.py \
+            --input ./output/images \
+            --output ./output/optimized \
+            --brand "${BRAND_NAME}" \
+            --quality 85 \
+            --max-size 1080 \
+            --manifest ./output/image_manifest.json
+
+      - name: 📝 Generate multi-platform templates
+        id: templates
+        env:
+          SCRAPE_RESULT: ${{ github.workspace }}/output/scrape_result.json
+          IMAGE_MANIFEST: ${{ github.workspace }}/output/image_manifest.json
+        run: node scripts/template_engine.js
+
+      - name: 🗃️ Append to catalog.json
+        run: |
+          node scripts/db.js append --file ./output/scrape_result.json
+          echo "Catalog updated"
+          cat database/catalog.json | head -50
+
+      - name: 📊 Generate run summary
+        if: always()
+        run: |
+          cat > $GITHUB_STEP_SUMMARY << EOF
+          ## 🛍️ Link Mode Run Summary
+
+          | Field | Value |
+          |-------|-------|
+          | Source URL | ${{ inputs.catalog_url }} |
+          | Products scraped | ${{ steps.scrape.outputs.product_count }} |
+          | Images optimized | ${{ steps.optimize.outputs.processed_count }} |
+          | Templates generated | ${{ steps.templates.outputs.output_count }} |
+          | Delivery note | ${{ inputs.delivery_note }} |
+          | Languages | ${{ inputs.languages }} |
+
+          ### 📁 Output structure
+          \`\`\`
+          output/
+          ├── scrape_result.json
+          ├── image_manifest.json
+          ├── template_manifest.json
+          ├── images/         (raw downloads)
+          ├── optimized/      (watermarked + compressed)
+          ├── telegram/       (HTML w/ inline Base64)
+          ├── whatsapp/       (caption .txt)
+          ├── social_media/   (long-form caption .txt)
+          └── tiktok/         (hook + description .txt)
+          \`\`\`
+          EOF
+
+      - name: 📦 Bundle Apparel-Brand-Pack artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Apparel-Brand-Pack
+          path: |
+            output/
+            database/catalog.json
+          retention-days: 30
+          compression-level: 9
+
+      - name: 🔄 Commit catalog.json back to main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add database/catalog.json
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "🛍️ catalog: +${{ steps.scrape.outputs.product_count }} products from link mode run ${{ github.run_id }}"
+            git push
+          fi
+
+      - name: 🚨 Notify on failure
+        if: failure()
+        run: |
+          echo "::error::Link mode failed. Check logs above for details."
+          if [ -n "${{ secrets.DISCORD_WEBHOOK }}" ]; then
+            curl -s -X POST -H "Content-Type: application/json" \
+              -d "{\"content\":\"❌ Link mode run failed: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" \
+              "${{ secrets.DISCORD_WEBHOOK }}" || true
+          fi

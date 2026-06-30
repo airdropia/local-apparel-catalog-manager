@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Output directories (regenerated per run)
+output/
+*.log
+
+# Secrets & env
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Corrupt backups
+*.corrupt.*.bak
+
+# Test artifacts
+coverage/
+.nyc_output/

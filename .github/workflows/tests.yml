@@ -1,0 +1,77 @@
+# .github/workflows/tests.yml
+# =============================================================
+# CI — Run unit tests + lint + catalog validation on every push
+# and PR. Keeps the codebase production-safe.
+# =============================================================
+
+name: 🧪 CI (Tests + Lint + Validate)
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 📦 Install Node dependencies
+        run: npm ci || npm install
+
+      - name: 📦 Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install Pillow numpy pytest
+
+      - name: 🔍 Lint
+        run: npx eslint scripts/ tests/ || true
+
+      - name: 🧪 Run Jest tests
+        run: npm test -- --ci --reporters=default
+        continue-on-error: false
+
+      - name: 🗃️ Validate catalog.json schema
+        run: node scripts/db.js validate
+
+      - name: 🐍 Test image optimizer smoke
+        run: |
+          mkdir -p /tmp/img_test
+          python3 -c "
+          from PIL import Image
+          img = Image.new('RGB', (800, 800), color=(200, 180, 160))
+          img.save('/tmp/img_test/sample.png')
+          "
+          python3 scripts/image_optimizer.py \
+            --input /tmp/img_test \
+            --output /tmp/img_test_out \
+            --brand "TestBrand" \
+            --manifest /tmp/img_test/manifest.json
+          test -f /tmp/img_test/manifest.json && echo "Smoke test passed"
+
+      - name: 📊 Test summary
+        if: always()
+        run: |
+          cat > $GITHUB_STEP_SUMMARY << EOF
+          ## 🧪 CI Summary
+          - Tests: ${{ job.status == 'success' && '✅ PASS' || '❌ FAIL' }}
+          - Catalog validation: ${{ job.status == 'success' && '✅' || '❌' }}
+          - Image optimizer smoke: ${{ job.status == 'success' && '✅' || '❌' }}
+          EOF

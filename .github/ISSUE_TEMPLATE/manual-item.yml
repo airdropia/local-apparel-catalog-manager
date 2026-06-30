@@ -1,0 +1,69 @@
+name: "🤳 Add Manual Catalog Item"
+description: "Submit a manual apparel item (cut-piece / unbranded) for catalog generation"
+title: "[MANUAL ITEM]: "
+labels: ["manual-item"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 🤳 Manual Catalog Item Submission
+        
+        Fill in the details below. Once you submit, the GitHub Action will:
+        1. Download your images
+        2. Enhance + watermark them
+        3. Generate WhatsApp / Telegram / FB-IG / TikTok captions
+        4. Add the item to `database/catalog.json`
+        5. Comment back with a download link
+        
+        ---
+        
+  - type: input
+    id: price
+    attributes:
+      label: "💰 Price"
+      description: "Item price (e.g. 'Rs. 2500' or 'PKR 2500')"
+      placeholder: "Rs. 2500"
+    validations:
+      required: true
+
+  - type: textarea
+    id: specs
+    attributes:
+      label: "📋 Raw Specs"
+      description: "Bullet-style specs. The system will auto-extract fabric, color, gender, season, etc."
+      placeholder: |
+        dark blue, 4.5 meters, soft fabric, summer collection
+        wash n wear, gents
+    validations:
+      required: true
+
+  - type: input
+    id: image_1
+    attributes:
+      label: "🖼️ Image URL #1"
+      description: "Direct link to a phone photo (e.g. uploaded to imgur, github user-asset, or any direct image URL)"
+      placeholder: "https://i.imgur.com/example.jpg"
+    validations:
+      required: true
+
+  - type: input
+    id: image_2
+    attributes:
+      label: "🖼️ Image URL #2 (optional)"
+    validations:
+      required: false
+
+  - type: input
+    id: image_3
+    attributes:
+      label: "🖼️ Image URL #3 (optional)"
+    validations:
+      required: false
+
+  - type: input
+    id: delivery
+    attributes:
+      label: "🚚 Delivery Note (optional)"
+      placeholder: "Free delivery in Narowal"
+    validations:
+      required: false
