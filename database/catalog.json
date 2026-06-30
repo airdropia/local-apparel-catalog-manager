@@ -1,6 +1,123 @@
 {
   "schemaVersion": "2.0.0",
-  "updatedAt": "2026-06-30T00:00:00.000Z",
-  "totalRuns": 0,
-  "entries": []
+  "updatedAt": "2026-06-30T16:04:15.947Z",
+  "totalRuns": 1,
+  "entries": [
+    {
+      "runId": "67a8094c-0ae7-467d-b26a-fef9227b13c0",
+      "timestamp": "2026-06-30T16:04:15.520Z",
+      "mode": "link",
+      "sourceUrl": "https://nishatlinen.com/products/42508021",
+      "platform": "shopify",
+      "deliveryNote": "Free delivery in Narowal",
+      "productCount": 4,
+      "products": [
+        {
+          "id": "6588187f-2f9a-49da-9e45-85e834ee39e1",
+          "sourceUrl": "https://www.facebook.com/sharer.php?u=https://nishatlinen.com/products/42508021",
+          "name": "Sorry, something went wrong.",
+          "sku": null,
+          "price": {
+            "value": null,
+            "currency": "PKR",
+            "display": "N/A"
+          },
+          "images": [
+            "https://static.facebook.com/images/logos/facebook_2x.png"
+          ],
+          "description": "",
+          "specs": {
+            "fabric": null,
+            "color": null,
+            "pieces": null,
+            "components": null,
+            "season": null,
+            "gender": null
+          },
+          "scrapedAt": "2026-06-30T16:03:19.979Z",
+          "localImages": []
+        },
+        {
+          "id": "75200a4c-0daf-438b-babf-52e0ea3f9ece",
+          "sourceUrl": "https://twitter.com/intent/tweet?text=2%20Piece%20-%20Naqsh%20Suit%20-%2042508021&url=https://nishatlinen.com/products/42508021",
+          "name": "",
+          "sku": null,
+          "price": {
+            "value": null,
+            "currency": "PKR",
+            "display": "N/A"
+          },
+          "images": [
+            "https://abs.twimg.com/emoji/v2/svg/26a0.svg"
+          ],
+          "description": "",
+          "specs": {
+            "fabric": null,
+            "color": null,
+            "pieces": null,
+            "components": null,
+            "season": null,
+            "gender": null
+          },
+          "scrapedAt": "2026-06-30T16:03:24.303Z",
+          "localImages": []
+        },
+        {
+          "id": "4853e5d7-b42e-48af-9f09-470b7b125726",
+          "sourceUrl": "https://pinterest.com/pin/create/button/?url=https://nishatlinen.com/products/42508021&media=https://nishatlinen.com/cdn/shop/files/42508021-_3.jpg?v=1775476763&width=800&description=Product%20Detail:2%20Piece%20Suit%204.5%20MeterFabric:%20Wash%20%26amp;%20WearColor:%20Black%0ANote:Product%20color%20may%20slightly%20vary%20due%20to%20photographic%20lighting%20sources%20or%20your%20monitor%20settings.",
+          "name": "Pin Builder",
+          "sku": null,
+          "price": {
+            "value": null,
+            "currency": "PKR",
+            "display": "N/A"
+          },
+          "images": [
+            "https://s.pinimg.com/images/facebook_share_image.png"
+          ],
+          "description": "",
+          "specs": {
+            "fabric": null,
+            "color": null,
+            "pieces": null,
+            "components": null,
+            "season": null,
+            "gender": null
+          },
+          "scrapedAt": "2026-06-30T16:03:20.189Z",
+          "localImages": []
+        },
+        {
+          "id": "070d234b-a1b0-43e6-90ed-c737df8b0a9a",
+          "sourceUrl": "https://nishatlinen.com/products/42508021",
+          "name": "2 Piece - Naqsh Suit - 42508021",
+          "sku": "001368212103",
+          "price": {
+            "value": 7117.5,
+            "currency": "PKR",
+            "display": "PKR 7,117.5"
+          },
+          "images": [
+            "https://nishatlinen.com/cdn/shop/files/42508021-_3.jpg?v=1775476763&width=1920",
+            "https://nishatlinen.com/cdn/shop/files/42508021-_3.jpg?v=1775476763&width=2400",
+            "https://nishatlinen.com/cdn/shop/files/42508021.jpg?v=1775476763&width=2400",
+            "https://nishatlinen.com/cdn/shop/files/42508021-_1.jpg?v=1775477500&width=2400",
+            "https://nishatlinen.com/cdn/shop/files/42508021-_5.jpg?v=1775477730&width=2400",
+            "https://nishatlinen.com/cdn/shop/files/42508021-_4.jpg?v=1775477730&width=2400"
+          ],
+          "description": "Product Detail:2 Piece Suit 4.5 MeterFabric: Wash &amp; WearColor: Black\nNote:Product color may slightly vary due to photographic lighting sources or your monitor settings.",
+          "specs": {
+            "fabric": null,
+            "color": "black",
+            "pieces": 2,
+            "components": null,
+            "season": null,
+            "gender": null
+          },
+          "scrapedAt": "2026-06-30T16:03:21.247Z",
+          "localImages": []
+        }
+      ]
+    }
+  ]
 }
