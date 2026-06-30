@@ -30,12 +30,11 @@ import sys
 import glob
 import json
 import struct
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 try:
     from PIL import Image, ImageEnhance, ImageOps, ImageDraw, ImageFont, ImageFilter
-    from PIL.ExifTags import Orientation as ExifOrientation
     PIL_AVAILABLE = True
 except ImportError:
     PIL_AVAILABLE = False
@@ -50,7 +49,7 @@ except ImportError:
 # ─── LOGGING ─────────────────────────────────────────────────────────────────
 def log(level: str, msg: str, obj: dict = None):
     """GitHub Actions-friendly logger."""
-    ts = datetime.utcnow().isoformat()
+    ts = datetime.now(timezone.utc).isoformat()
     payload = f" {json.dumps(obj)}" if obj else ""
     if os.environ.get("GITHUB_ACTIONS") == "true":
         cmd = {
@@ -109,9 +108,15 @@ def normalize_gamma(img: Image.Image, target_mean: float = 128.0) -> Image.Image
     # gamma < 1 brightens, gamma > 1 darkens
     ratio = target_mean / cur_mean
     gamma = max(0.4, min(2.5, 1.0 / max(ratio, 0.1))) if ratio < 1 else max(0.4, min(2.5, ratio))
-    # Apply gamma: out = 255 * (in/255)^(1/gamma)
-    table = np.array([((i / 255.0) ** (1.0 / gamma)) * 255 for i in range(256)]).astype(np.uint8)
-    return img.convert("RGB").point(table)
+    # Build a 256-entry LUT and apply per-channel (RGB point() needs 768 entries
+    # or we apply per-channel via split/merge)
+    table = [((i / 255.0) ** (1.0 / gamma)) * 255 for i in range(256)]
+    table_int = [int(round(v)) for v in table]
+    r, g, b = img.convert("RGB").split()
+    r = r.point(table_int, "L")
+    g = g.point(table_int, "L")
+    b = b.point(table_int, "L")
+    return Image.merge("RGB", (r, g, b))
 
 
 # ─── CLAHE-STYLE CONTRAST STRETCH ────────────────────────────────────────────
@@ -297,7 +302,7 @@ def process_image(src_path: str, out_dir: str, brand: str, quality: int, max_siz
     return {
         "source": src_path,
         "variants": variants,
-        "processedAt": datetime.utcnow().isoformat() + "Z",
+        "processedAt": datetime.now(timezone.utc).isoformat() + "Z",
     }
 
 
@@ -330,7 +335,7 @@ def main():
         log("WARN", "No input images found", {"input": args.input})
         # Write empty manifest so downstream steps don't fail
         with open(args.manifest, "w") as f:
-            json.dump({"images": [], "processedAt": datetime.utcnow().isoformat() + "Z"}, f, indent=2)
+            json.dump({"images": [], "processedAt": datetime.now(timezone.utc).isoformat() + "Z"}, f, indent=2)
         return
 
     log("INFO", f"Found {len(input_files)} images to process", {"input": args.input})
@@ -342,7 +347,7 @@ def main():
             results.append(result)
 
     manifest = {
-        "processedAt": datetime.utcnow().isoformat() + "Z",
+        "processedAt": datetime.now(timezone.utc).isoformat() + "Z",
         "brand": args.brand,
         "inputDir": args.input,
         "outputDir": args.output,

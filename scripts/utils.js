@@ -153,9 +153,23 @@ function normalizePrice(raw) {
   const str = String(raw).trim();
   const currencyMatch = str.match(/(Rs\.?|PKR|INR|\$|USD|₹|₨)/i);
   const currency = currencyMatch
-    ? currencyMatch[1].toUpperCase().replace('RS', 'PKR').replace('₹', 'INR').replace('₨', 'PKR').replace('$', 'USD')
+    ? currencyMatch[1].toUpperCase()
+        .replace(/RS\.?/, 'PKR')
+        .replace('₹', 'INR')
+        .replace('₨', 'PKR')
+        .replace('$', 'USD')
     : 'PKR';
-  const numeric = str.replace(/[^0-9.]/g, '');
+  // Step 1: strip currency symbols/letters (keep digits, dots, commas, spaces)
+  const noSymbols = str.replace(/(Rs\.?|PKR|INR|USD|\$|₹|₨)/gi, ' ');
+  // Step 2: remove thousand separators (comma between digits)
+  const noThousands = noSymbols.replace(/(\d),(\d)/g, '$1$2');
+  // Step 3: strip everything except digits and dot
+  let numeric = noThousands.replace(/[^0-9.]/g, '');
+  // Step 4: if multiple dots, keep only the first one (treat rest as thousands sep)
+  const parts = numeric.split('.');
+  if (parts.length > 2) {
+    numeric = parts.slice(0, -1).join('') + '.' + parts[parts.length - 1];
+  }
   const value = numeric ? parseFloat(numeric) : null;
   return {
     value,
@@ -167,9 +181,12 @@ function normalizePrice(raw) {
 // ─── EMOJI PICKER (category-aware) ──────────────────────────────────────────
 function emojiFor(category = '') {
   const c = String(category).toLowerCase();
-  if (/gent|men|boy|male|suit|shirt|pant/.test(c)) return '👔';
+  // Order matters: check female/kids BEFORE male (since 'ladies' contains 'ladi' not 'gent',
+  // but generic words like 'suit' could match male first if male came first)
   if (/ladi|women|girl|female|kurti|saree|dress/.test(c)) return '👗';
   if (/kid|child|baby/.test(c)) return '🧒';
+  if (/gent|gents|men|men's|boy|male/.test(c)) return '👔';
+  if (/suit|shirt|pant|trouser|shalwar|kurta/.test(c)) return '👔';
   if (/winter|warm|jacket|coat|sweater/.test(c)) return '🧥';
   if (/summer|lawn|cotton|light/.test(c)) return '☀️';
   if (/shoe|sandal|footwear/.test(c)) return '👟';

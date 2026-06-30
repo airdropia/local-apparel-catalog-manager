@@ -1,6 +1,6 @@
 # Dependencies
 node_modules/
-package-lock.json
+# NOTE: package-lock.json IS committed so actions/setup-node cache works
 
 # Output directories (regenerated per run)
 output/
